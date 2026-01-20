@@ -289,7 +289,7 @@ export default function Home() {
                 contentStyle={{ backgroundColor: '#1F2937', border: 'none' }}
                 formatter={(value, name) => {
                   if (typeof value === 'number') {
-                    if (name.includes('NEAR')) return formatNumber(value, 0) + ' NEAR';
+                    if (name && name.includes('NEAR')) return formatNumber(value, 0) + ' NEAR';
                     return formatCurrency(value);
                   }
                   return value;
