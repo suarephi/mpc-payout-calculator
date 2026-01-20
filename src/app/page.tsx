@@ -40,7 +40,8 @@ export default function Home() {
           date: d.date,
           price: d.close,
           floor: yearSummary?.floorPrice ?? null,
-          ceiling: yearSummary?.ceilingPrice ?? null
+          ceiling: yearSummary?.ceilingPrice ?? null,
+          strikePrice: yearSummary?.basePrice180d ?? null
         };
       });
     } else {
@@ -50,7 +51,8 @@ export default function Home() {
         date: d.date,
         price: d.close,
         floor: yearSummary?.floorPrice ?? null,
-        ceiling: yearSummary?.ceilingPrice ?? null
+        ceiling: yearSummary?.ceilingPrice ?? null,
+        strikePrice: yearSummary?.basePrice180d ?? null
       }));
     }
   }, [selectedYear, summaries]);
@@ -138,20 +140,37 @@ export default function Home() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-          {summaries.map(s => (
-            <div key={s.year} className="bg-gray-800 rounded-lg p-4">
-              <h3 className="text-lg font-bold text-cyan-400">{s.year}</h3>
-              <p className="text-xs text-gray-400">180d Avg: {formatCurrency(s.basePrice180d)}</p>
-              <p className="text-xs text-green-400">Floor: {formatCurrency(s.floorPrice)}</p>
-              <p className="text-xs text-red-400">Ceiling: {formatCurrency(s.ceilingPrice)}</p>
-              <p className="text-sm mt-2">{formatNumber(s.fixedNearTokens, 0)} NEAR/mo</p>
-              <div className="flex gap-2 mt-2 text-xs">
-                <span className="text-green-400">F:{s.floorCount}</span>
-                <span className="text-red-400">C:{s.ceilingCount}</span>
-                <span className="text-blue-400">N:{s.normalCount}</span>
+          {summaries.map(s => {
+            // Highlight the previous year's card when filtering (since 180d lookback uses prior year data)
+            const isHighlighted = selectedYear !== 'all' && s.year === selectedYear - 1;
+            const isSelected = selectedYear === s.year;
+            return (
+              <div
+                key={s.year}
+                className={`rounded-lg p-4 transition-all ${
+                  isHighlighted
+                    ? 'bg-cyan-900 ring-2 ring-cyan-400'
+                    : isSelected
+                      ? 'bg-gray-700 ring-2 ring-blue-400'
+                      : 'bg-gray-800'
+                }`}
+              >
+                <h3 className="text-lg font-bold text-cyan-400">{s.year}</h3>
+                {isHighlighted && (
+                  <p className="text-xs text-cyan-300 mb-1">← 180d lookback source</p>
+                )}
+                <p className="text-xs text-gray-400">180d Avg: {formatCurrency(s.basePrice180d)}</p>
+                <p className="text-xs text-green-400">Floor: {formatCurrency(s.floorPrice)}</p>
+                <p className="text-xs text-red-400">Ceiling: {formatCurrency(s.ceilingPrice)}</p>
+                <p className="text-sm mt-2">{formatNumber(s.fixedNearTokens, 0)} NEAR/mo</p>
+                <div className="flex gap-2 mt-2 text-xs">
+                  <span className="text-green-400">F:{s.floorCount}</span>
+                  <span className="text-red-400">C:{s.ceilingCount}</span>
+                  <span className="text-blue-400">N:{s.normalCount}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Price Chart with Dynamic Boundaries */}
@@ -184,6 +203,14 @@ export default function Home() {
                 stroke="#EF4444"
                 strokeDasharray="5 5"
                 name={`Ceiling (${Math.round(params.ceilingPercent * 100)}%)`}
+              />
+              <Line
+                type="stepAfter"
+                dataKey="strikePrice"
+                stroke="#F59E0B"
+                strokeWidth={2}
+                dot={false}
+                name="180d Strike Price"
               />
               <Area
                 type="stepAfter"
