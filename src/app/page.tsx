@@ -16,8 +16,8 @@ const typedPriceData = priceData as PriceData[];
 export default function Home() {
   const [params, setParams] = useState<CalculatorParams>({
     monthlyUsdTarget: 7200,
-    floorPercent: 0.80,    // 80% of 180d avg
-    ceilingPercent: 1.70   // 170% of 180d avg
+    floorPercent: 0.80,
+    ceilingPercent: 1.70
   });
 
   const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
@@ -29,7 +29,6 @@ export default function Home() {
 
   const summaries = useMemo(() => summarizeByYear(payouts), [payouts]);
 
-  // Build chart data with dynamic floor/ceiling per year
   const chartData = useMemo(() => {
     if (selectedYear === 'all') {
       return typedPriceData.map(d => {
@@ -75,13 +74,11 @@ export default function Home() {
     }));
   }, [payouts, selectedYear]);
 
-  // Calculate floor/ceiling USD values for reference lines
   const floorUsdValue = params.monthlyUsdTarget * params.floorPercent;
   const ceilingUsdValue = params.monthlyUsdTarget * params.ceilingPercent;
 
   const years = [2021, 2022, 2023, 2024, 2025, 2026];
 
-  // Calculate totals for display
   const totals = useMemo(() => {
     const filtered = selectedYear === 'all' ? summaries : summaries.filter(s => s.year === selectedYear);
     return {
@@ -93,58 +90,61 @@ export default function Home() {
   }, [summaries, selectedYear]);
 
   return (
-    <main className="min-h-screen bg-gray-900 text-white p-6">
+    <main className="min-h-screen p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">MPC Node Payout Calculator</h1>
-        <p className="text-gray-400 mb-6">
-          NEAR Protocol - Dynamic Floor & Ceiling Analysis (% of 180-day Lookback)
-        </p>
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gradient mb-2">MPC Node Payout Calculator</h1>
+          <p className="text-muted-foreground">
+            NEAR Protocol - Dynamic Floor & Ceiling Analysis (% of 180-day Lookback)
+          </p>
+        </div>
 
         {/* Parameters */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Parameters</h2>
+        <div className="glass-card rounded-xl p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-4">Parameters</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Monthly USD Target</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Monthly USD Target</label>
               <input
                 type="number"
                 value={params.monthlyUsdTarget}
                 onChange={(e) => setParams({ ...params, monthlyUsdTarget: parseFloat(e.target.value) || 0 })}
-                className="w-full bg-gray-700 rounded px-3 py-2 text-white"
+                className="w-full bg-white/50 border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Floor (% of 180d Avg)</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Floor (% of 180d Avg)</label>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
                   step="5"
                   value={Math.round(params.floorPercent * 100)}
                   onChange={(e) => setParams({ ...params, floorPercent: (parseFloat(e.target.value) || 0) / 100 })}
-                  className="w-full bg-gray-700 rounded px-3 py-2 text-white"
+                  className="w-full bg-white/50 border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-all"
                 />
-                <span className="text-gray-400">%</span>
+                <span className="text-muted-foreground font-medium">%</span>
               </div>
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Ceiling (% of 180d Avg)</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Ceiling (% of 180d Avg)</label>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
                   step="5"
                   value={Math.round(params.ceilingPercent * 100)}
                   onChange={(e) => setParams({ ...params, ceilingPercent: (parseFloat(e.target.value) || 0) / 100 })}
-                  className="w-full bg-gray-700 rounded px-3 py-2 text-white"
+                  className="w-full bg-white/50 border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-all"
                 />
-                <span className="text-gray-400">%</span>
+                <span className="text-muted-foreground font-medium">%</span>
               </div>
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Filter Year</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Filter Year</label>
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-                className="w-full bg-gray-700 rounded px-3 py-2 text-white"
+                className="w-full bg-white/50 border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-all"
               >
                 <option value="all">All Years</option>
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
@@ -161,34 +161,34 @@ export default function Home() {
             return (
               <div
                 key={s.year}
-                className={`rounded-lg p-4 transition-all ${
+                className={`glass-card rounded-xl p-4 card-hover ${
                   isHighlighted
-                    ? 'bg-cyan-900 ring-2 ring-cyan-400'
+                    ? 'ring-2 ring-[var(--near-cyan)] bg-[var(--near-cyan)]/5'
                     : isSelected
-                      ? 'bg-gray-700 ring-2 ring-blue-400'
-                      : 'bg-gray-800'
+                      ? 'ring-2 ring-[var(--accent)]'
+                      : ''
                 }`}
               >
-                <h3 className="text-lg font-bold text-cyan-400">{s.year}</h3>
+                <h3 className="text-lg font-bold text-gradient">{s.year}</h3>
                 {isHighlighted && (
-                  <p className="text-xs text-cyan-300 mb-1">← 180d lookback source</p>
+                  <p className="text-xs text-[var(--near-cyan)] mb-1 font-medium">← 180d lookback source</p>
                 )}
-                <p className="text-xs text-gray-400">180d Avg: {formatCurrency(s.basePrice180d)}</p>
-                <p className="text-xs text-green-400">Floor: {formatCurrency(s.floorPrice)}</p>
-                <p className="text-xs text-red-400">Ceiling: {formatCurrency(s.ceilingPrice)}</p>
-                <p className="text-sm mt-2">{formatNumber(s.fixedNearTokens, 0)} NEAR/mo</p>
+                <p className="text-xs text-muted-foreground">180d Avg: {formatCurrency(s.basePrice180d)}</p>
+                <p className="text-xs amount-positive">Floor: {formatCurrency(s.floorPrice)}</p>
+                <p className="text-xs amount-negative">Ceiling: {formatCurrency(s.ceilingPrice)}</p>
+                <p className="text-sm font-semibold mt-2">{formatNumber(s.fixedNearTokens, 0)} NEAR/mo</p>
                 <div className="flex gap-2 mt-2 text-xs">
-                  <span className="text-green-400">F:{s.floorCount}</span>
-                  <span className="text-red-400">C:{s.ceilingCount}</span>
-                  <span className="text-blue-400">N:{s.normalCount}</span>
+                  <span className="variance-pill positive">F:{s.floorCount}</span>
+                  <span className="variance-pill negative">C:{s.ceilingCount}</span>
+                  <span className="px-2 py-0.5 bg-[var(--muted)] rounded-full">N:{s.normalCount}</span>
                 </div>
-                <div className="mt-2 pt-2 border-t border-gray-600 text-xs">
-                  <p className="text-gray-400">Total NEAR: {formatNumber(s.totalNearPaid, 0)}</p>
+                <div className="mt-2 pt-2 border-t border-border text-xs">
+                  <p className="text-muted-foreground">Total: {formatNumber(s.totalNearPaid, 0)} NEAR</p>
                   {s.nearAddedByFloor > 0 && (
-                    <p className="text-green-400">+{formatNumber(s.nearAddedByFloor, 0)} (floor)</p>
+                    <p className="amount-positive">+{formatNumber(s.nearAddedByFloor, 0)} (floor)</p>
                   )}
                   {s.nearSavedByCeiling > 0 && (
-                    <p className="text-red-400">-{formatNumber(s.nearSavedByCeiling, 0)} (ceiling)</p>
+                    <p className="amount-negative">-{formatNumber(s.nearSavedByCeiling, 0)} (ceiling)</p>
                   )}
                 </div>
               </div>
@@ -197,83 +197,82 @@ export default function Home() {
         </div>
 
         {/* NEAR Impact Summary */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">NEAR Token Impact Summary</h2>
+        <div className="glass-card rounded-xl p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-4">NEAR Token Impact Summary</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-6">
-            <div>
-              <p className="text-gray-400 text-sm">Base NEAR (no adjustment)</p>
+            <div className="p-4 bg-white/30 rounded-lg">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Base NEAR (no adjustment)</p>
               <p className="text-2xl font-bold">{formatNumber(totals.totalNearIfNoAdjustment, 0)}</p>
             </div>
-            <div>
-              <p className="text-gray-400 text-sm">Actual NEAR Paid</p>
-              <p className="text-2xl font-bold text-cyan-400">{formatNumber(totals.totalNearPaid, 0)}</p>
+            <div className="p-4 bg-[var(--near-cyan)]/10 rounded-lg">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Actual NEAR Paid</p>
+              <p className="text-2xl font-bold text-[var(--near-cyan)]">{formatNumber(totals.totalNearPaid, 0)}</p>
             </div>
-            <div>
-              <p className="text-gray-400 text-sm">Extra NEAR (Floor Hits)</p>
-              <p className="text-2xl font-bold text-green-400">+{formatNumber(totals.nearAddedByFloor, 0)}</p>
+            <div className="p-4 bg-[var(--positive-muted)] rounded-lg">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Extra NEAR (Floor Hits)</p>
+              <p className="text-2xl font-bold amount-positive">+{formatNumber(totals.nearAddedByFloor, 0)}</p>
             </div>
-            <div>
-              <p className="text-gray-400 text-sm">NEAR Saved (Ceiling Hits)</p>
-              <p className="text-2xl font-bold text-red-400">-{formatNumber(totals.nearSavedByCeiling, 0)}</p>
+            <div className="p-4 bg-[var(--negative-muted)] rounded-lg">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">NEAR Saved (Ceiling Hits)</p>
+              <p className="text-2xl font-bold amount-negative">-{formatNumber(totals.nearSavedByCeiling, 0)}</p>
             </div>
           </div>
 
           {/* Per-Year Token Impact Table */}
-          <div className="overflow-x-auto">
+          <div className="data-grid overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-gray-400 border-b border-gray-700">
-                  <th className="pb-2 pr-4">Year</th>
-                  <th className="pb-2 pr-4">180d Avg</th>
-                  <th className="pb-2 pr-4">Floor</th>
-                  <th className="pb-2 pr-4">Ceiling</th>
-                  <th className="pb-2 pr-4">Base NEAR/mo</th>
-                  <th className="pb-2 pr-4">Total Base NEAR</th>
-                  <th className="pb-2 pr-4">Actual NEAR Paid</th>
-                  <th className="pb-2 pr-4">Floor Adj (+)</th>
-                  <th className="pb-2 pr-4">Ceiling Adj (-)</th>
-                  <th className="pb-2">Net Impact</th>
+                <tr>
+                  <th className="text-left">Year</th>
+                  <th className="text-left">180d Avg</th>
+                  <th className="text-left">Floor</th>
+                  <th className="text-left">Ceiling</th>
+                  <th className="text-right">Base NEAR/mo</th>
+                  <th className="text-right">Total Base</th>
+                  <th className="text-right">Actual Paid</th>
+                  <th className="text-right">Floor Adj (+)</th>
+                  <th className="text-right">Ceiling Adj (-)</th>
+                  <th className="text-right">Net Impact</th>
                 </tr>
               </thead>
               <tbody>
                 {summaries.map(s => {
                   const netImpact = s.nearAddedByFloor - s.nearSavedByCeiling;
                   return (
-                    <tr key={s.year} className="border-b border-gray-700/50 hover:bg-gray-700/30">
-                      <td className="py-2 pr-4 font-bold text-cyan-400">{s.year}</td>
-                      <td className="py-2 pr-4">{formatCurrency(s.basePrice180d)}</td>
-                      <td className="py-2 pr-4 text-green-400">{formatCurrency(s.floorPrice)}</td>
-                      <td className="py-2 pr-4 text-red-400">{formatCurrency(s.ceilingPrice)}</td>
-                      <td className="py-2 pr-4">{formatNumber(s.fixedNearTokens, 0)}</td>
-                      <td className="py-2 pr-4">{formatNumber(s.totalNearIfNoAdjustment, 0)}</td>
-                      <td className="py-2 pr-4 font-medium text-cyan-400">{formatNumber(s.totalNearPaid, 0)}</td>
-                      <td className="py-2 pr-4 text-green-400">
+                    <tr key={s.year}>
+                      <td className="font-bold text-gradient">{s.year}</td>
+                      <td>{formatCurrency(s.basePrice180d)}</td>
+                      <td className="amount-positive">{formatCurrency(s.floorPrice)}</td>
+                      <td className="amount-negative">{formatCurrency(s.ceilingPrice)}</td>
+                      <td className="text-right font-mono">{formatNumber(s.fixedNearTokens, 0)}</td>
+                      <td className="text-right font-mono">{formatNumber(s.totalNearIfNoAdjustment, 0)}</td>
+                      <td className="text-right font-mono font-semibold">{formatNumber(s.totalNearPaid, 0)}</td>
+                      <td className="text-right font-mono amount-positive">
                         {s.nearAddedByFloor > 0 ? `+${formatNumber(s.nearAddedByFloor, 0)}` : '-'}
                       </td>
-                      <td className="py-2 pr-4 text-red-400">
+                      <td className="text-right font-mono amount-negative">
                         {s.nearSavedByCeiling > 0 ? `-${formatNumber(s.nearSavedByCeiling, 0)}` : '-'}
                       </td>
-                      <td className={`py-2 font-medium ${
-                        netImpact > 0 ? 'text-green-400' : netImpact < 0 ? 'text-red-400' : 'text-gray-400'
+                      <td className={`text-right font-mono font-semibold ${
+                        netImpact > 0 ? 'amount-positive' : netImpact < 0 ? 'amount-negative' : ''
                       }`}>
                         {netImpact > 0 ? '+' : ''}{formatNumber(netImpact, 0)}
                       </td>
                     </tr>
                   );
                 })}
-                {/* Totals row */}
-                <tr className="border-t-2 border-gray-600 font-bold">
-                  <td className="py-2 pr-4">TOTAL</td>
-                  <td className="py-2 pr-4">-</td>
-                  <td className="py-2 pr-4">-</td>
-                  <td className="py-2 pr-4">-</td>
-                  <td className="py-2 pr-4">-</td>
-                  <td className="py-2 pr-4">{formatNumber(totals.totalNearIfNoAdjustment, 0)}</td>
-                  <td className="py-2 pr-4 text-cyan-400">{formatNumber(totals.totalNearPaid, 0)}</td>
-                  <td className="py-2 pr-4 text-green-400">+{formatNumber(totals.nearAddedByFloor, 0)}</td>
-                  <td className="py-2 pr-4 text-red-400">-{formatNumber(totals.nearSavedByCeiling, 0)}</td>
-                  <td className={`py-2 ${
-                    (totals.nearAddedByFloor - totals.nearSavedByCeiling) > 0 ? 'text-green-400' : 'text-red-400'
+                <tr className="summary-row">
+                  <td className="font-bold">TOTAL</td>
+                  <td>-</td>
+                  <td>-</td>
+                  <td>-</td>
+                  <td className="text-right">-</td>
+                  <td className="text-right font-mono font-bold">{formatNumber(totals.totalNearIfNoAdjustment, 0)}</td>
+                  <td className="text-right font-mono font-bold">{formatNumber(totals.totalNearPaid, 0)}</td>
+                  <td className="text-right font-mono font-bold amount-positive">+{formatNumber(totals.nearAddedByFloor, 0)}</td>
+                  <td className="text-right font-mono font-bold amount-negative">-{formatNumber(totals.nearSavedByCeiling, 0)}</td>
+                  <td className={`text-right font-mono font-bold ${
+                    (totals.nearAddedByFloor - totals.nearSavedByCeiling) > 0 ? 'amount-positive' : 'amount-negative'
                   }`}>
                     {(totals.nearAddedByFloor - totals.nearSavedByCeiling) > 0 ? '+' : ''}
                     {formatNumber(totals.nearAddedByFloor - totals.nearSavedByCeiling, 0)}
@@ -284,74 +283,46 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Price Chart with Dynamic Boundaries */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">NEAR Price with Dynamic Floor/Ceiling Boundaries</h2>
+        {/* Price Chart */}
+        <div className="glass-card rounded-xl p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-4">NEAR Price with Dynamic Floor/Ceiling Boundaries</h2>
           <ResponsiveContainer width="100%" height={400}>
             <ComposedChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis
                 dataKey="date"
-                stroke="#9CA3AF"
+                stroke="var(--muted-foreground)"
                 tick={{ fontSize: 10 }}
                 tickFormatter={(v) => v.substring(0, 7)}
               />
-              <YAxis stroke="#9CA3AF" domain={[0, 'auto']} />
+              <YAxis stroke="var(--muted-foreground)" domain={[0, 'auto']} />
               <Tooltip
-                contentStyle={{ backgroundColor: '#1F2937', border: 'none' }}
-                labelStyle={{ color: '#9CA3AF' }}
+                contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px' }}
+                labelStyle={{ color: 'var(--foreground)' }}
                 formatter={(value, name) => {
                   if (typeof value === 'number') return formatCurrency(value);
                   return value;
                 }}
               />
               <Legend />
-              <Area
-                type="stepAfter"
-                dataKey="ceiling"
-                fill="#EF4444"
-                fillOpacity={0.1}
-                stroke="#EF4444"
-                strokeDasharray="5 5"
-                name={`Ceiling (${Math.round(params.ceilingPercent * 100)}%)`}
-              />
-              <Line
-                type="stepAfter"
-                dataKey="strikePrice"
-                stroke="#F59E0B"
-                strokeWidth={2}
-                dot={false}
-                name="180d Strike Price"
-              />
-              <Area
-                type="stepAfter"
-                dataKey="floor"
-                fill="#22C55E"
-                fillOpacity={0.1}
-                stroke="#22C55E"
-                strokeDasharray="5 5"
-                name={`Floor (${Math.round(params.floorPercent * 100)}%)`}
-              />
-              <Line type="monotone" dataKey="price" stroke="#3B82F6" dot={false} name="NEAR Price" strokeWidth={1.5} />
+              <Area type="stepAfter" dataKey="ceiling" fill="var(--negative)" fillOpacity={0.1} stroke="var(--negative)" strokeDasharray="5 5" name={`Ceiling (${Math.round(params.ceilingPercent * 100)}%)`} />
+              <Line type="stepAfter" dataKey="strikePrice" stroke="var(--warning)" strokeWidth={2} dot={false} name="180d Strike Price" />
+              <Area type="stepAfter" dataKey="floor" fill="var(--positive)" fillOpacity={0.1} stroke="var(--positive)" strokeDasharray="5 5" name={`Floor (${Math.round(params.floorPercent * 100)}%)`} />
+              <Line type="monotone" dataKey="price" stroke="var(--near-cyan)" dot={false} name="NEAR Price" strokeWidth={1.5} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
 
         {/* Payout Value Chart */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Monthly Payout USD Value (Effective)</h2>
+        <div className="glass-card rounded-xl p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-4">Monthly Payout USD Value (Effective)</h2>
           <ResponsiveContainer width="100%" height={350}>
             <ComposedChart data={payoutChartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis
-                dataKey="date"
-                stroke="#9CA3AF"
-                tick={{ fontSize: 10 }}
-                tickFormatter={(v) => v.substring(0, 7)}
-              />
-              <YAxis stroke="#9CA3AF" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="date" stroke="var(--muted-foreground)" tick={{ fontSize: 10 }} tickFormatter={(v) => v.substring(0, 7)} />
+              <YAxis stroke="var(--muted-foreground)" />
               <Tooltip
-                contentStyle={{ backgroundColor: '#1F2937', border: 'none' }}
+                contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px' }}
                 formatter={(value, name) => {
                   if (typeof value === 'number') {
                     if (typeof name === 'string' && name.includes('NEAR')) return formatNumber(value, 0) + ' NEAR';
@@ -361,70 +332,57 @@ export default function Home() {
                 }}
               />
               <Legend />
-              <ReferenceLine
-                y={floorUsdValue}
-                stroke="#22C55E"
-                strokeDasharray="5 5"
-                label={{ value: `Floor ${formatCurrency(floorUsdValue)}`, fill: '#22C55E', fontSize: 10, position: 'left' }}
-              />
-              <ReferenceLine
-                y={params.monthlyUsdTarget}
-                stroke="#F59E0B"
-                strokeDasharray="3 3"
-                label={{ value: `Target ${formatCurrency(params.monthlyUsdTarget)}`, fill: '#F59E0B', fontSize: 10, position: 'left' }}
-              />
-              <ReferenceLine
-                y={ceilingUsdValue}
-                stroke="#EF4444"
-                strokeDasharray="5 5"
-                label={{ value: `Ceiling ${formatCurrency(ceilingUsdValue)}`, fill: '#EF4444', fontSize: 10, position: 'left' }}
-              />
-              <Line type="monotone" dataKey="effectiveUsdValue" stroke="#8B5CF6" name="Effective USD Value" strokeWidth={2} dot={{ fill: '#8B5CF6', r: 4 }} />
-              <Line type="monotone" dataKey="usdValue" stroke="#6B7280" name="Unadjusted USD Value" strokeWidth={1} strokeDasharray="3 3" dot={false} />
+              <ReferenceLine y={floorUsdValue} stroke="var(--positive)" strokeDasharray="5 5" label={{ value: `Floor ${formatCurrency(floorUsdValue)}`, fill: 'var(--positive)', fontSize: 10, position: 'left' }} />
+              <ReferenceLine y={params.monthlyUsdTarget} stroke="var(--warning)" strokeDasharray="3 3" label={{ value: `Target ${formatCurrency(params.monthlyUsdTarget)}`, fill: 'var(--warning)', fontSize: 10, position: 'left' }} />
+              <ReferenceLine y={ceilingUsdValue} stroke="var(--negative)" strokeDasharray="5 5" label={{ value: `Ceiling ${formatCurrency(ceilingUsdValue)}`, fill: 'var(--negative)', fontSize: 10, position: 'left' }} />
+              <Line type="monotone" dataKey="effectiveUsdValue" stroke="var(--accent)" name="Effective USD Value" strokeWidth={2} dot={{ fill: 'var(--accent)', r: 4 }} />
+              <Line type="monotone" dataKey="usdValue" stroke="var(--muted-foreground)" name="Unadjusted USD Value" strokeWidth={1} strokeDasharray="3 3" dot={false} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
 
         {/* Detailed Table */}
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Monthly Payout Details</h2>
-          <div className="overflow-x-auto">
+        <div className="glass-card rounded-xl p-6">
+          <h2 className="text-lg font-semibold mb-4">Monthly Payout Details</h2>
+          <div className="data-grid overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-gray-400 border-b border-gray-700">
-                  <th className="pb-2 pr-4">Date</th>
-                  <th className="pb-2 pr-4">Year</th>
-                  <th className="pb-2 pr-4">Price @ Payout</th>
-                  <th className="pb-2 pr-4">Floor</th>
-                  <th className="pb-2 pr-4">Ceiling</th>
-                  <th className="pb-2 pr-4">Base NEAR</th>
-                  <th className="pb-2 pr-4">Effective NEAR</th>
-                  <th className="pb-2 pr-4">NEAR Delta</th>
-                  <th className="pb-2 pr-4">Effective USD</th>
-                  <th className="pb-2">Status</th>
+                <tr>
+                  <th className="text-left">Date</th>
+                  <th className="text-left">Year</th>
+                  <th className="text-right">Price @ Payout</th>
+                  <th className="text-right">Floor</th>
+                  <th className="text-right">Ceiling</th>
+                  <th className="text-right">Base NEAR</th>
+                  <th className="text-right">Effective NEAR</th>
+                  <th className="text-right">Delta</th>
+                  <th className="text-right">Effective USD</th>
+                  <th className="text-left">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {(selectedYear === 'all' ? payouts : payouts.filter(p => p.year === selectedYear)).map((p, i) => (
-                  <tr key={i} className="border-b border-gray-700/50 hover:bg-gray-700/30">
-                    <td className="py-2 pr-4">{p.payoutDate}</td>
-                    <td className="py-2 pr-4">{p.year}</td>
-                    <td className="py-2 pr-4">{formatCurrency(p.priceAtPayout)}</td>
-                    <td className="py-2 pr-4 text-green-400">{formatCurrency(p.floorPrice)}</td>
-                    <td className="py-2 pr-4 text-red-400">{formatCurrency(p.ceilingPrice)}</td>
-                    <td className="py-2 pr-4">{formatNumber(p.fixedNearTokens, 0)}</td>
-                    <td className="py-2 pr-4 font-medium">{formatNumber(p.effectiveNearTokens, 0)}</td>
-                    <td className={`py-2 pr-4 ${
-                      p.nearDelta > 0 ? 'text-green-400' : p.nearDelta < 0 ? 'text-red-400' : 'text-gray-400'
+                  <tr key={i}>
+                    <td>{p.payoutDate}</td>
+                    <td>{p.year}</td>
+                    <td className="text-right font-mono">{formatCurrency(p.priceAtPayout)}</td>
+                    <td className="text-right font-mono amount-positive">{formatCurrency(p.floorPrice)}</td>
+                    <td className="text-right font-mono amount-negative">{formatCurrency(p.ceilingPrice)}</td>
+                    <td className="text-right font-mono">{formatNumber(p.fixedNearTokens, 0)}</td>
+                    <td className="text-right font-mono font-semibold">{formatNumber(p.effectiveNearTokens, 0)}</td>
+                    <td className={`text-right font-mono ${
+                      p.nearDelta > 0 ? 'amount-positive' : p.nearDelta < 0 ? 'amount-negative' : 'text-muted-foreground'
                     }`}>
                       {p.nearDelta > 0 ? '+' : ''}{formatNumber(p.nearDelta, 0)}
                     </td>
-                    <td className="py-2 pr-4">{formatCurrency(p.effectiveUsdValue)}</td>
-                    <td className={`py-2 font-medium ${
-                      p.status === 'FLOOR HIT' ? 'text-green-400' :
-                      p.status === 'CEILING HIT' ? 'text-red-400' : 'text-blue-400'
-                    }`}>
-                      {p.status}
+                    <td className="text-right font-mono">{formatCurrency(p.effectiveUsdValue)}</td>
+                    <td>
+                      <span className={`variance-pill ${
+                        p.status === 'FLOOR HIT' ? 'positive' :
+                        p.status === 'CEILING HIT' ? 'negative' : ''
+                      }`}>
+                        {p.status}
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -433,7 +391,7 @@ export default function Home() {
           </div>
         </div>
 
-        <footer className="mt-8 text-center text-gray-500 text-sm">
+        <footer className="mt-8 text-center text-muted-foreground text-sm">
           <p>NEAR Foundation - MPC Governance Payout Calculator</p>
           <p>Data: Oct 2020 - Jan 2026 | Dynamic floor/ceiling based on % of 180-day lookback</p>
         </footer>
