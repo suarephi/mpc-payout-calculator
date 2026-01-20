@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, ComposedChart, Area
+  Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, ComposedChart, Area, ReferenceLine
 } from 'recharts';
 import priceData from '@/data/price-data.json';
 import { PriceData, CalculatorParams } from '@/lib/types';
@@ -32,7 +32,6 @@ export default function Home() {
   // Build chart data with dynamic floor/ceiling per year
   const chartData = useMemo(() => {
     if (selectedYear === 'all') {
-      // For all years view, show price with year-specific boundaries
       return typedPriceData.map(d => {
         const year = parseInt(d.date.substring(0, 4));
         const yearSummary = summaries.find(s => s.year === year);
@@ -66,16 +65,32 @@ export default function Home() {
       date: p.payoutDate,
       price: p.priceAtPayout,
       usdValue: p.usdValueAtPayout,
+      effectiveUsdValue: p.effectiveUsdValue,
       floor: p.floorPrice,
       ceiling: p.ceilingPrice,
-      floorValue: params.monthlyUsdTarget * params.floorPercent,
-      ceilingValue: params.monthlyUsdTarget * params.ceilingPercent,
       status: p.status,
-      nearTokens: p.fixedNearTokens
+      fixedNearTokens: p.fixedNearTokens,
+      effectiveNearTokens: p.effectiveNearTokens,
+      nearDelta: p.nearDelta
     }));
-  }, [payouts, selectedYear, params]);
+  }, [payouts, selectedYear]);
+
+  // Calculate floor/ceiling USD values for reference lines
+  const floorUsdValue = params.monthlyUsdTarget * params.floorPercent;
+  const ceilingUsdValue = params.monthlyUsdTarget * params.ceilingPercent;
 
   const years = [2021, 2022, 2023, 2024, 2025, 2026];
+
+  // Calculate totals for display
+  const totals = useMemo(() => {
+    const filtered = selectedYear === 'all' ? summaries : summaries.filter(s => s.year === selectedYear);
+    return {
+      totalNearPaid: filtered.reduce((sum, s) => sum + s.totalNearPaid, 0),
+      totalNearIfNoAdjustment: filtered.reduce((sum, s) => sum + s.totalNearIfNoAdjustment, 0),
+      nearSavedByCeiling: filtered.reduce((sum, s) => sum + s.nearSavedByCeiling, 0),
+      nearAddedByFloor: filtered.reduce((sum, s) => sum + s.nearAddedByFloor, 0)
+    };
+  }, [summaries, selectedYear]);
 
   return (
     <main className="min-h-screen bg-gray-900 text-white p-6">
@@ -141,7 +156,6 @@ export default function Home() {
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           {summaries.map(s => {
-            // Highlight the previous year's card when filtering (since 180d lookback uses prior year data)
             const isHighlighted = selectedYear !== 'all' && s.year === selectedYear - 1;
             const isSelected = selectedYear === s.year;
             return (
@@ -168,9 +182,41 @@ export default function Home() {
                   <span className="text-red-400">C:{s.ceilingCount}</span>
                   <span className="text-blue-400">N:{s.normalCount}</span>
                 </div>
+                <div className="mt-2 pt-2 border-t border-gray-600 text-xs">
+                  <p className="text-gray-400">Total NEAR: {formatNumber(s.totalNearPaid, 0)}</p>
+                  {s.nearAddedByFloor > 0 && (
+                    <p className="text-green-400">+{formatNumber(s.nearAddedByFloor, 0)} (floor)</p>
+                  )}
+                  {s.nearSavedByCeiling > 0 && (
+                    <p className="text-red-400">-{formatNumber(s.nearSavedByCeiling, 0)} (ceiling)</p>
+                  )}
+                </div>
               </div>
             );
           })}
+        </div>
+
+        {/* NEAR Impact Summary */}
+        <div className="bg-gray-800 rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">NEAR Token Impact Summary</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div>
+              <p className="text-gray-400 text-sm">Base NEAR (no adjustment)</p>
+              <p className="text-2xl font-bold">{formatNumber(totals.totalNearIfNoAdjustment, 0)}</p>
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm">Actual NEAR Paid</p>
+              <p className="text-2xl font-bold text-cyan-400">{formatNumber(totals.totalNearPaid, 0)}</p>
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm">Extra NEAR (Floor Hits)</p>
+              <p className="text-2xl font-bold text-green-400">+{formatNumber(totals.nearAddedByFloor, 0)}</p>
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm">NEAR Saved (Ceiling Hits)</p>
+              <p className="text-2xl font-bold text-red-400">-{formatNumber(totals.nearSavedByCeiling, 0)}</p>
+            </div>
+          </div>
         </div>
 
         {/* Price Chart with Dynamic Boundaries */}
@@ -228,7 +274,7 @@ export default function Home() {
 
         {/* Payout Value Chart */}
         <div className="bg-gray-800 rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Monthly Payout USD Value</h2>
+          <h2 className="text-xl font-semibold mb-4">Monthly Payout USD Value (Effective)</h2>
           <ResponsiveContainer width="100%" height={350}>
             <ComposedChart data={payoutChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -242,12 +288,34 @@ export default function Home() {
               <Tooltip
                 contentStyle={{ backgroundColor: '#1F2937', border: 'none' }}
                 formatter={(value, name) => {
-                  if (typeof value === 'number') return formatCurrency(value);
+                  if (typeof value === 'number') {
+                    if (name.includes('NEAR')) return formatNumber(value, 0) + ' NEAR';
+                    return formatCurrency(value);
+                  }
                   return value;
                 }}
               />
               <Legend />
-              <Line type="monotone" dataKey="usdValue" stroke="#8B5CF6" name="USD Value" strokeWidth={2} dot={{ fill: '#8B5CF6', r: 4 }} />
+              <ReferenceLine
+                y={floorUsdValue}
+                stroke="#22C55E"
+                strokeDasharray="5 5"
+                label={{ value: `Floor ${formatCurrency(floorUsdValue)}`, fill: '#22C55E', fontSize: 10, position: 'left' }}
+              />
+              <ReferenceLine
+                y={params.monthlyUsdTarget}
+                stroke="#F59E0B"
+                strokeDasharray="3 3"
+                label={{ value: `Target ${formatCurrency(params.monthlyUsdTarget)}`, fill: '#F59E0B', fontSize: 10, position: 'left' }}
+              />
+              <ReferenceLine
+                y={ceilingUsdValue}
+                stroke="#EF4444"
+                strokeDasharray="5 5"
+                label={{ value: `Ceiling ${formatCurrency(ceilingUsdValue)}`, fill: '#EF4444', fontSize: 10, position: 'left' }}
+              />
+              <Line type="monotone" dataKey="effectiveUsdValue" stroke="#8B5CF6" name="Effective USD Value" strokeWidth={2} dot={{ fill: '#8B5CF6', r: 4 }} />
+              <Line type="monotone" dataKey="usdValue" stroke="#6B7280" name="Unadjusted USD Value" strokeWidth={1} strokeDasharray="3 3" dot={false} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
@@ -261,12 +329,13 @@ export default function Home() {
                 <tr className="text-left text-gray-400 border-b border-gray-700">
                   <th className="pb-2 pr-4">Date</th>
                   <th className="pb-2 pr-4">Year</th>
-                  <th className="pb-2 pr-4">180d Avg</th>
+                  <th className="pb-2 pr-4">Price @ Payout</th>
                   <th className="pb-2 pr-4">Floor</th>
                   <th className="pb-2 pr-4">Ceiling</th>
-                  <th className="pb-2 pr-4">NEAR Tokens</th>
-                  <th className="pb-2 pr-4">Price @ Payout</th>
-                  <th className="pb-2 pr-4">USD Value</th>
+                  <th className="pb-2 pr-4">Base NEAR</th>
+                  <th className="pb-2 pr-4">Effective NEAR</th>
+                  <th className="pb-2 pr-4">NEAR Delta</th>
+                  <th className="pb-2 pr-4">Effective USD</th>
                   <th className="pb-2">Status</th>
                 </tr>
               </thead>
@@ -275,12 +344,17 @@ export default function Home() {
                   <tr key={i} className="border-b border-gray-700/50 hover:bg-gray-700/30">
                     <td className="py-2 pr-4">{p.payoutDate}</td>
                     <td className="py-2 pr-4">{p.year}</td>
-                    <td className="py-2 pr-4">{formatCurrency(p.basePrice180d)}</td>
+                    <td className="py-2 pr-4">{formatCurrency(p.priceAtPayout)}</td>
                     <td className="py-2 pr-4 text-green-400">{formatCurrency(p.floorPrice)}</td>
                     <td className="py-2 pr-4 text-red-400">{formatCurrency(p.ceilingPrice)}</td>
                     <td className="py-2 pr-4">{formatNumber(p.fixedNearTokens, 0)}</td>
-                    <td className="py-2 pr-4">{formatCurrency(p.priceAtPayout)}</td>
-                    <td className="py-2 pr-4">{formatCurrency(p.usdValueAtPayout)}</td>
+                    <td className="py-2 pr-4 font-medium">{formatNumber(p.effectiveNearTokens, 0)}</td>
+                    <td className={`py-2 pr-4 ${
+                      p.nearDelta > 0 ? 'text-green-400' : p.nearDelta < 0 ? 'text-red-400' : 'text-gray-400'
+                    }`}>
+                      {p.nearDelta > 0 ? '+' : ''}{formatNumber(p.nearDelta, 0)}
+                    </td>
+                    <td className="py-2 pr-4">{formatCurrency(p.effectiveUsdValue)}</td>
                     <td className={`py-2 font-medium ${
                       p.status === 'FLOOR HIT' ? 'text-green-400' :
                       p.status === 'CEILING HIT' ? 'text-red-400' : 'text-blue-400'

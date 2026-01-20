@@ -10,12 +10,15 @@ export interface PayoutResult {
   basePrice180d: number;
   floorPrice: number;
   ceilingPrice: number;
-  fixedNearTokens: number;
+  fixedNearTokens: number;        // Base tokens from 180d avg
+  effectiveNearTokens: number;    // Actual tokens paid (adjusted for floor/ceiling)
   priceAtPayout: number;
-  usdValueAtPayout: number;
+  usdValueAtPayout: number;       // Value if paying fixed tokens
+  effectiveUsdValue: number;      // Actual USD value after adjustment
   floorHit: boolean;
   ceilingHit: boolean;
   status: 'FLOOR HIT' | 'CEILING HIT' | 'Normal';
+  nearDelta: number;              // Difference from fixed tokens (+ = more NEAR, - = less NEAR)
 }
 
 export interface YearSummary {
@@ -29,6 +32,10 @@ export interface YearSummary {
   normalCount: number;
   totalPayouts: number;
   avgUsdValue: number;
+  totalNearPaid: number;
+  totalNearIfNoAdjustment: number;
+  nearSavedByCeiling: number;
+  nearAddedByFloor: number;
 }
 
 export interface CalculatorParams {

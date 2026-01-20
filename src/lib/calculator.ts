@@ -44,8 +44,12 @@ export function calculatePayouts(
     const floorPrice = basePrice * floorPercent;
     const ceilingPrice = basePrice * ceilingPercent;
 
-    // Fixed NEAR tokens based on 180d average (no adjustment needed since floor/ceiling are relative)
+    // Fixed NEAR tokens based on 180d average
     const fixedNearTokens = monthlyUsdTarget / basePrice;
+
+    // Floor/ceiling USD values
+    const floorUsdValue = monthlyUsdTarget * floorPercent;   // 80% of target
+    const ceilingUsdValue = monthlyUsdTarget * ceilingPercent; // 170% of target
 
     // Calculate payouts for each month (Feb to Jan next year)
     for (let month = 2; month <= 13; month++) {
@@ -60,6 +64,29 @@ export function calculatePayouts(
       const floorHit = priceAtPayout < floorPrice;
       const ceilingHit = priceAtPayout > ceilingPrice;
 
+      // Calculate effective payout
+      // If floor hit: pay more NEAR to guarantee floor USD value
+      // If ceiling hit: pay less NEAR (cap at ceiling USD value)
+      // If normal: pay fixed NEAR tokens
+      let effectiveNearTokens: number;
+      let effectiveUsdValue: number;
+
+      if (floorHit) {
+        // Price dropped below floor - pay more NEAR to guarantee minimum USD value
+        effectiveNearTokens = floorUsdValue / priceAtPayout;
+        effectiveUsdValue = floorUsdValue;
+      } else if (ceilingHit) {
+        // Price rose above ceiling - cap payout at ceiling USD value
+        effectiveNearTokens = ceilingUsdValue / priceAtPayout;
+        effectiveUsdValue = ceilingUsdValue;
+      } else {
+        // Normal - pay fixed tokens
+        effectiveNearTokens = fixedNearTokens;
+        effectiveUsdValue = usdValueAtPayout;
+      }
+
+      const nearDelta = effectiveNearTokens - fixedNearTokens;
+
       results.push({
         year,
         payoutDate,
@@ -68,11 +95,14 @@ export function calculatePayouts(
         floorPrice,
         ceilingPrice,
         fixedNearTokens,
+        effectiveNearTokens,
         priceAtPayout,
         usdValueAtPayout,
+        effectiveUsdValue,
         floorHit,
         ceilingHit,
-        status: floorHit ? 'FLOOR HIT' : (ceilingHit ? 'CEILING HIT' : 'Normal')
+        status: floorHit ? 'FLOOR HIT' : (ceilingHit ? 'CEILING HIT' : 'Normal'),
+        nearDelta
       });
     }
   }
@@ -87,18 +117,37 @@ export function summarizeByYear(payouts: PayoutResult[]): YearSummary[] {
     return acc;
   }, {} as Record<number, PayoutResult[]>);
 
-  return Object.entries(yearGroups).map(([year, data]) => ({
-    year: parseInt(year),
-    basePrice180d: data[0].basePrice180d,
-    floorPrice: data[0].floorPrice,
-    ceilingPrice: data[0].ceilingPrice,
-    fixedNearTokens: data[0].fixedNearTokens,
-    floorCount: data.filter(d => d.floorHit).length,
-    ceilingCount: data.filter(d => d.ceilingHit).length,
-    normalCount: data.filter(d => !d.floorHit && !d.ceilingHit).length,
-    totalPayouts: data.length,
-    avgUsdValue: data.reduce((sum, d) => sum + d.usdValueAtPayout, 0) / data.length
-  })).sort((a, b) => a.year - b.year);
+  return Object.entries(yearGroups).map(([year, data]) => {
+    const totalNearPaid = data.reduce((sum, d) => sum + d.effectiveNearTokens, 0);
+    const totalNearIfNoAdjustment = data.reduce((sum, d) => sum + d.fixedNearTokens, 0);
+
+    // NEAR saved by ceiling (when we paid less than fixed)
+    const nearSavedByCeiling = data
+      .filter(d => d.ceilingHit)
+      .reduce((sum, d) => sum + (d.fixedNearTokens - d.effectiveNearTokens), 0);
+
+    // NEAR added by floor (when we paid more than fixed)
+    const nearAddedByFloor = data
+      .filter(d => d.floorHit)
+      .reduce((sum, d) => sum + (d.effectiveNearTokens - d.fixedNearTokens), 0);
+
+    return {
+      year: parseInt(year),
+      basePrice180d: data[0].basePrice180d,
+      floorPrice: data[0].floorPrice,
+      ceilingPrice: data[0].ceilingPrice,
+      fixedNearTokens: data[0].fixedNearTokens,
+      floorCount: data.filter(d => d.floorHit).length,
+      ceilingCount: data.filter(d => d.ceilingHit).length,
+      normalCount: data.filter(d => !d.floorHit && !d.ceilingHit).length,
+      totalPayouts: data.length,
+      avgUsdValue: data.reduce((sum, d) => sum + d.effectiveUsdValue, 0) / data.length,
+      totalNearPaid,
+      totalNearIfNoAdjustment,
+      nearSavedByCeiling,
+      nearAddedByFloor
+    };
+  }).sort((a, b) => a.year - b.year);
 }
 
 export function formatCurrency(value: number): string {
