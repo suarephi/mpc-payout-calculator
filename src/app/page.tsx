@@ -199,7 +199,7 @@ export default function Home() {
         {/* NEAR Impact Summary */}
         <div className="bg-gray-800 rounded-lg p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">NEAR Token Impact Summary</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-6">
             <div>
               <p className="text-gray-400 text-sm">Base NEAR (no adjustment)</p>
               <p className="text-2xl font-bold">{formatNumber(totals.totalNearIfNoAdjustment, 0)}</p>
@@ -216,6 +216,71 @@ export default function Home() {
               <p className="text-gray-400 text-sm">NEAR Saved (Ceiling Hits)</p>
               <p className="text-2xl font-bold text-red-400">-{formatNumber(totals.nearSavedByCeiling, 0)}</p>
             </div>
+          </div>
+
+          {/* Per-Year Token Impact Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-400 border-b border-gray-700">
+                  <th className="pb-2 pr-4">Year</th>
+                  <th className="pb-2 pr-4">180d Avg</th>
+                  <th className="pb-2 pr-4">Floor</th>
+                  <th className="pb-2 pr-4">Ceiling</th>
+                  <th className="pb-2 pr-4">Base NEAR/mo</th>
+                  <th className="pb-2 pr-4">Total Base NEAR</th>
+                  <th className="pb-2 pr-4">Actual NEAR Paid</th>
+                  <th className="pb-2 pr-4">Floor Adj (+)</th>
+                  <th className="pb-2 pr-4">Ceiling Adj (-)</th>
+                  <th className="pb-2">Net Impact</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summaries.map(s => {
+                  const netImpact = s.nearAddedByFloor - s.nearSavedByCeiling;
+                  return (
+                    <tr key={s.year} className="border-b border-gray-700/50 hover:bg-gray-700/30">
+                      <td className="py-2 pr-4 font-bold text-cyan-400">{s.year}</td>
+                      <td className="py-2 pr-4">{formatCurrency(s.basePrice180d)}</td>
+                      <td className="py-2 pr-4 text-green-400">{formatCurrency(s.floorPrice)}</td>
+                      <td className="py-2 pr-4 text-red-400">{formatCurrency(s.ceilingPrice)}</td>
+                      <td className="py-2 pr-4">{formatNumber(s.fixedNearTokens, 0)}</td>
+                      <td className="py-2 pr-4">{formatNumber(s.totalNearIfNoAdjustment, 0)}</td>
+                      <td className="py-2 pr-4 font-medium text-cyan-400">{formatNumber(s.totalNearPaid, 0)}</td>
+                      <td className="py-2 pr-4 text-green-400">
+                        {s.nearAddedByFloor > 0 ? `+${formatNumber(s.nearAddedByFloor, 0)}` : '-'}
+                      </td>
+                      <td className="py-2 pr-4 text-red-400">
+                        {s.nearSavedByCeiling > 0 ? `-${formatNumber(s.nearSavedByCeiling, 0)}` : '-'}
+                      </td>
+                      <td className={`py-2 font-medium ${
+                        netImpact > 0 ? 'text-green-400' : netImpact < 0 ? 'text-red-400' : 'text-gray-400'
+                      }`}>
+                        {netImpact > 0 ? '+' : ''}{formatNumber(netImpact, 0)}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {/* Totals row */}
+                <tr className="border-t-2 border-gray-600 font-bold">
+                  <td className="py-2 pr-4">TOTAL</td>
+                  <td className="py-2 pr-4">-</td>
+                  <td className="py-2 pr-4">-</td>
+                  <td className="py-2 pr-4">-</td>
+                  <td className="py-2 pr-4">-</td>
+                  <td className="py-2 pr-4">{formatNumber(totals.totalNearIfNoAdjustment, 0)}</td>
+                  <td className="py-2 pr-4 text-cyan-400">{formatNumber(totals.totalNearPaid, 0)}</td>
+                  <td className="py-2 pr-4 text-green-400">+{formatNumber(totals.nearAddedByFloor, 0)}</td>
+                  <td className="py-2 pr-4 text-red-400">-{formatNumber(totals.nearSavedByCeiling, 0)}</td>
+                  <td className={`py-2 ${
+                    (totals.nearAddedByFloor - totals.nearSavedByCeiling) > 0 ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {(totals.nearAddedByFloor - totals.nearSavedByCeiling) > 0 ? '+' : ''}
+                    {formatNumber(totals.nearAddedByFloor - totals.nearSavedByCeiling, 0)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
