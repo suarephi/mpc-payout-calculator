@@ -34,15 +34,18 @@ export function calculatePayouts(
   years: number[] = [2021, 2022, 2023, 2024, 2025, 2026]
 ): PayoutResult[] {
   const results: PayoutResult[] = [];
-  const { monthlyUsdTarget, floorPrice, ceilingPrice } = params;
+  const { monthlyUsdTarget, floorPercent, ceilingPercent } = params;
 
   for (const year of years) {
     const basePrice = get180dAverage(priceData, `${year}-01-01`);
     if (basePrice === null) continue;
 
-    // Apply floor/ceiling to base price
-    const adjustedBasePrice = Math.max(Math.min(basePrice, ceilingPrice), floorPrice);
-    const fixedNearTokens = monthlyUsdTarget / adjustedBasePrice;
+    // Calculate floor/ceiling based on percentage of 180d average for this year
+    const floorPrice = basePrice * floorPercent;
+    const ceilingPrice = basePrice * ceilingPercent;
+
+    // Fixed NEAR tokens based on 180d average (no adjustment needed since floor/ceiling are relative)
+    const fixedNearTokens = monthlyUsdTarget / basePrice;
 
     // Calculate payouts for each month (Feb to Jan next year)
     for (let month = 2; month <= 13; month++) {
@@ -62,7 +65,8 @@ export function calculatePayouts(
         payoutDate,
         month: payoutMonth,
         basePrice180d: basePrice,
-        adjustedBasePrice,
+        floorPrice,
+        ceilingPrice,
         fixedNearTokens,
         priceAtPayout,
         usdValueAtPayout,
@@ -86,7 +90,8 @@ export function summarizeByYear(payouts: PayoutResult[]): YearSummary[] {
   return Object.entries(yearGroups).map(([year, data]) => ({
     year: parseInt(year),
     basePrice180d: data[0].basePrice180d,
-    adjustedBasePrice: data[0].adjustedBasePrice,
+    floorPrice: data[0].floorPrice,
+    ceilingPrice: data[0].ceilingPrice,
     fixedNearTokens: data[0].fixedNearTokens,
     floorCount: data.filter(d => d.floorHit).length,
     ceilingCount: data.filter(d => d.ceilingHit).length,
